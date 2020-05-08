@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>524</width>
-    <height>450</height>
+    <width>613</width>
+    <height>505</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,6 +29,29 @@
         <property name="spacing">
          <number>2</number>
         </property>
+        <item>
+         <widget class="QComboBox" name="camera_name">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>28</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_searchcamera">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>查找摄像头</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QPushButton" name="pushButton_opencamera">
           <property name="minimumSize">
@@ -105,7 +128,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>524</width>
+     <width>613</width>
      <height>23</height>
     </rect>
    </property>

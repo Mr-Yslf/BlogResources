@@ -2,14 +2,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/opencv.hpp>
-#include <opencv2/imgproc.hpp>
 #include <QTimer>
 #include <QDebug>
-using namespace cv;
-
+#include <QThread>
+#include <QCameraInfo>
+#include <QList>
+#include "camthread.h"
 namespace Ui {
 class MainWindow;
 }
@@ -35,12 +33,16 @@ private slots:
 
     void display_frame();
 
+    void on_pushButton_searchcamera_clicked();
+
+    void recivePicture(QImage img);
+
+    void reviewVideo_complete();
 private:
     Ui::MainWindow *ui;
-    bool complete_flag = false;
-    VideoCapture myCapture;
-    VideoWriter writer;
-    Mat picture;
+    QThread *firstThread;
+    CamThread *MyCamThread;
+    QList<QCameraInfo> camera_list;
     QTimer fps_timer;
 };
 

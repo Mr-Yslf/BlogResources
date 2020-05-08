@@ -1,82 +1,95 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
+#include <QMessageBox>
+#include <Qdir>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    fps_timer.setInterval(40);
-    connect(&fps_timer,SIGNAL(timeout()),this,SLOT(display_frame()));
+    firstThread = new QThread;
+    MyCamThread = new CamThread;
+    MyCamThread->moveToThread(firstThread);
+    connect(&fps_timer,    SIGNAL(timeout()), MyCamThread, SLOT(mainwindowDisplay()));
+    connect(MyCamThread,SIGNAL(sendPicture(QImage)),this,SLOT(recivePicture(QImage)));
+    fps_timer.setInterval(50);
+    connect(MyCamThread,SIGNAL(reviewComplete()),this,SLOT(reviewVideo_complete()));
+
+    QString save_picture = QCoreApplication::applicationDirPath();
+    QDir dir;
+    dir.cd(save_picture);
+    if(!dir.exists("video"))
+    {
+        dir.mkdir("video");
+    }
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete MyCamThread;
 }
 
 void MainWindow::on_pushButton_opencamera_clicked()
 {
-    myCapture.open(0);
-    if(!myCapture.open(0))
+    if(ui->camera_name->currentIndex() >= 0)
     {
-        qDebug()<<"Camera Open Failed.";
-        return;
+        firstThread->start();
+        MyCamThread->camNumber(ui->camera_name->currentIndex());
+        fps_timer.start();
+        MyCamThread->openCamera();
     }
-    fps_timer.start();
+    else
+        QMessageBox::information(this,tr("Error"),tr("Have No Camera Device!"),QMessageBox::Ok);
 }
 
 void MainWindow::on_pushButton_closecamera_clicked()
 {
     fps_timer.stop();
-    myCapture.release();
     ui->label_videoViewer->clear();
+    MyCamThread->closeCamera();
+    firstThread->quit();
+    firstThread->wait();
 }
 
 void MainWindow::on_pushButton_savevideo_clicked()
 {
-    if(!myCapture.isOpened())
-    {
-        qDebug()<<"Camera Is Not Open.";
-        return;
-    }
-    writer.open("D:\\test.avi",VideoWriter::fourcc('M', 'J', 'P', 'G'),25, Size(640, 480), true);
-    while (!complete_flag)
-    {
-        myCapture >> picture;
-        writer.write(picture);
-        namedWindow("VideoPlay", WINDOW_NORMAL);
-        imshow("VideoPlay", picture);
-        waitKey(40);
-    }
+    MyCamThread->setFlag(false);
+    MyCamThread->startsave();
 }
 
 void MainWindow::on_pushButton_savecomplete_clicked()
 {
-    complete_flag = true;
+    MyCamThread->setFlag(true);
+    MyCamThread->closeImshow();
 }
 
 void MainWindow::on_pushButton_videoreview_clicked()
 {
-    myCapture.open("D:\\test.avi");
-    while (myCapture.isOpened())
-    {
-        myCapture >> picture;
-        if(picture.empty())
-            break;
-        imshow("VideoPlay", picture);
-        if (waitKey(40) == 27)  // ESC键的ASCII码为27，如果按下ESC键就推出
-            break;
-    }
-    destroyWindow("VideoPlay");
+    firstThread->start();
+    MyCamThread->reviewVideo();
 }
 
 void MainWindow::display_frame()
 {
-    myCapture >> picture;
-    QImage img1 = QImage((const unsigned char*)picture.data, picture.cols, picture.rows, QImage::Format_RGB888).rgbSwapped();
-    ui->label_videoViewer->setPixmap(QPixmap::fromImage(img1));
-    namedWindow("VideoPlay", WINDOW_NORMAL);
-    imshow("VideoPlay", picture);
-    waitKey(40);
+
+}
+
+void MainWindow::on_pushButton_searchcamera_clicked()
+{
+    ui->camera_name->clear();
+    camera_list = QCameraInfo::availableCameras();
+    for(auto i =0;i<camera_list.size();i++)
+    {
+        ui->camera_name->addItem(camera_list.at(i).description());
+    }
+}
+void MainWindow::recivePicture(QImage img)
+{
+    ui->label_videoViewer->setPixmap(QPixmap::fromImage(img));
+}
+void MainWindow::reviewVideo_complete()
+{
+    firstThread->quit();
+    firstThread->wait();
 }
